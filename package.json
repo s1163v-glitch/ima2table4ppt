@@ -1,1 +1,40 @@
-{\n  "name": "ima2table4ppt",\n  "version": "1.0.0",\n  "description": "Image table OCR → PowerPoint Electron app",\n  "main": "main.js",\n  "scripts": {\n    "start": "electron .",\n    "build": "electron-builder --win portable"\n  },\n  "devDependencies": {\n    "electron": "^31.0.0",\n    "electron-builder": "^24.13.3"\n  },\n  "dependencies": {\n    "tesseract.js": "^5.1.1",\n    "sharp": "^0.33.4"\n  },\n  "build": {\n    "appId": "com.geolabs.ima2table4ppt",\n    "productName": "ima2table4ppt",\n    "directories": { "output": "dist" },\n    "win": {\n      "target": [{"target": "portable", "arch": ["x64"]}]\n    },\n    "files": [\n      "main.js",\n      "preload.js",\n      "renderer/**/*",\n      "node_modules/**/*"\n    ],\n    "asar": true,\n    "asarUnpack": [\n      "node_modules/sharp/**/*",\n      "node_modules/tesseract.js/**/*",\n      "node_modules/tesseract.js-core/**/*"\n    ]\n  }\n}\n
+{
+  "name": "ima2table4ppt",
+  "version": "1.0.0",
+  "description": "Image table OCR to PowerPoint-ready HTML table converter",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "dependencies": {
+    "tesseract.js": "^5.1.0",
+    "sharp": "^0.33.4"
+  },
+  "build": {
+    "appId": "com.geolabs.ima2table4ppt",
+    "productName": "ima2table4ppt",
+    "directories": { "output": "dist" },
+    "win": {
+      "target": [{ "target": "portable", "arch": ["x64"] }],
+      "icon": "assets/icon.ico"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "assets/**/*",
+      "node_modules/**/*"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/sharp/**/*",
+      "node_modules/tesseract.js/**/*",
+      "node_modules/tesseract.js-core/**/*"
+    ]
+  }
+}
