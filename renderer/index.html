@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ima2table4ppt</title>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <span class="app-title">ima2table4ppt</span>
+    <div class="tabs">
+      <button class="tab active" data-tab="image">이미지 인식</button>
+      <button class="tab" data-tab="figma">Figma CSS</button>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <!-- LEFT PANEL -->
+    <section class="panel panel-left">
+
+      <!-- IMAGE TAB -->
+      <div class="tab-pane active" id="pane-image">
+        <div class="section-title">이미지 입력</div>
+
+        <div id="drop-zone" class="drop-zone">
+          <input type="file" id="file-input" accept="image/*" />
+          <div class="dz-inner">
+            <div class="dz-icon">📂</div>
+            <div class="dz-label">이미지를 드래그하거나 클릭해서 선택</div>
+            <div class="dz-sub">JPG · PNG · GIF · 클립보드 Ctrl+V 지원</div>
+          </div>
+        </div>
+
+        <div id="img-editor" class="img-editor" style="display:none">
+          <div class="toolbar">
+            <button id="btn-hline" class="btn btn-tool">— 가로선</button>
+            <button id="btn-vline" class="btn btn-tool">| 세로선</button>
+            <button id="btn-clear-lines" class="btn btn-danger-sm">선 초기화</button>
+            <button id="btn-reset-img" class="btn" style="margin-left:auto">🔄 이미지 초기화</button>
+          </div>
+          <div class="canvas-wrap" id="canvas-wrap">
+            <img id="preview-img" alt="표 이미지" />
+            <canvas id="line-canvas"></canvas>
+          </div>
+          <div class="hint-box" id="hint-box" style="display:none">
+            ℹ️ 자동 인식이 어려운 셀 경계는 위에서 선을 직접 그어주세요. 그 선이 행/열 구분 힌트로 사용됩니다.
+          </div>
+          <div class="toolbar" style="margin-top:8px">
+            <button id="btn-recognize" class="btn btn-primary">🔍 표 인식 시작</button>
+          </div>
+        </div>
+
+        <div id="ocr-status" class="status-bar" style="display:none"></div>
+      </div>
+
+      <!-- FIGMA TAB -->
+      <div class="tab-pane" id="pane-figma">
+        <div class="section-title">Figma CSS 붙여넣기</div>
+        <textarea id="figma-input" class="css-input" placeholder="Figma에서 Copy as CSS 한 내용을 붙여넣기…"></textarea>
+        <div class="toolbar" style="margin-top:8px">
+          <button id="btn-figma-parse" class="btn btn-primary">📋 CSS 변환</button>
+        </div>
+        <div id="figma-status" class="status-bar" style="display:none"></div>
+      </div>
+
+      <!-- TEMPLATE PANEL -->
+      <div class="divider"></div>
+      <div class="section-title" style="margin-top:4px">디자인 템플릿</div>
+      <div id="tpl-grid" class="tpl-grid"></div>
+      <div class="tpl-save-row">
+        <input id="tpl-name" class="tpl-name-input" placeholder="템플릿 이름…" value="내 템플릿" />
+        <button id="btn-save-tpl" class="btn">💾 저장</button>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL -->
+    <section class="panel panel-right">
+      <div class="right-topbar">
+        <div class="section-title">미리보기</div>
+        <div style="display:flex;gap:6px">
+          <button id="btn-cell-edit-toggle" class="btn" style="display:none">✏️ 셀 편집</button>
+          <button id="btn-copy-ppt" class="btn btn-primary" style="display:none">📋 Copy for PowerPoint</button>
+        </div>
+      </div>
+
+      <div id="cell-editor" class="cell-editor" style="display:none">
+        <label>배경색 <input type="color" id="ce-bg" value="#ffffff" /></label>
+        <label>글자색 <input type="color" id="ce-color" value="#111111" /></label>
+        <label>폰트크기 <input type="number" id="ce-size" value="9" min="6" max="24" /></label>
+        <label>정렬
+          <select id="ce-align">
+            <option value="center">가운데</option>
+            <option value="left">왼쪽</option>
+            <option value="right">오른쪽</option>
+          </select>
+        </label>
+        <label>colspan <input type="number" id="ce-colspan" value="1" min="1" max="20" /></label>
+        <label>rowspan <input type="number" id="ce-rowspan" value="1" min="1" max="20" /></label>
+      </div>
+
+      <div id="preview-wrap" class="preview-wrap">
+        <div class="preview-empty">👆 이미지를 업로드하거나 CSS를 붙여넣으면<br>여기에 표가 표시됩니다</div>
+      </div>
+
+      <div id="copy-status" class="status-bar" style="display:none"></div>
+
+      <details class="html-details">
+        <summary>생성된 HTML 보기</summary>
+        <pre id="html-out"></pre>
+      </details>
+    </section>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
