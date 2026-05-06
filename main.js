@@ -1,14 +1,14 @@
-const { app, BrowserWindow, ipcMain, clipboard } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const os = require('os');
+const sharp = require('sharp');
 
 let mainWindow;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1280,
-    height: 820,
+    height: 800,
     minWidth: 900,
     minHeight: 600,
     webPreferences: {
@@ -17,7 +17,7 @@ function createWindow() {
       nodeIntegration: false
     },
     title: 'ima2table4ppt',
-    backgroundColor: '#f0f2f5'
+    backgroundColor: '#f0ede8'
   });
   mainWindow.loadFile('renderer/index.html');
 }
@@ -26,67 +26,62 @@ app.whenReady().then(createWindow);
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 
-// OCR: 파일 경로
-ipcMain.handle('ocr-file', async (event, filePath) => {
+// 파일 열기 다이얼로그
+ipcMain.handle('open-file-dialog', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'bmp', 'tiff', 'gif'] }]
+  });
+  if (result.canceled || !result.filePaths.length) return null;
+  const filePath = result.filePaths[0];
+  const buffer = fs.readFileSync(filePath);
+  const base64 = buffer.toString('base64');
+  const ext = path.extname(filePath).slice(1).toLowerCase();
+  const mime = (ext === 'jpg' || ext === 'jpeg') ? 'image/jpeg' : `image/${ext}`;
+  return { dataUrl: `data:${mime};base64,${base64}`, filePath };
+});
+
+// 이미지 전처리: sharp로 그레이스케일 + 대비 강화 → OCR 정확도 향상
+ipcMain.handle('preprocess-image', async (event, dataUrl) => {
   try {
-    const { createWorker } = require('tesseract.js');
-    const sharp = require('sharp');
-    const tmpPath = path.join(os.tmpdir(), 'i2t_' + Date.now() + '.png');
-    await sharp(filePath).greyscale().normalise().sharpen().png().toFile(tmpPath);
-    const worker = await createWorker(['kor', 'eng']);
-    const { data } = await worker.recognize(tmpPath, {}, { blocks: true });
-    await worker.terminate();
-    try { fs.unlinkSync(tmpPath); } catch(e) {}
-    return { ok: true, data };
+    const base64 = dataUrl.split(',')[1];
+    const buffer = Buffer.from(base64, 'base64');
+    const processed = await sharp(buffer)
+      .greyscale()
+      .normalise()
+      .sharpen()
+      .toBuffer();
+    return { success: true, dataUrl: `data:image/png;base64,${processed.toString('base64')}` };
   } catch (e) {
-    return { ok: false, error: e.message };
+    return { success: false, error: e.message };
   }
 });
 
-// OCR: base64 (클립보드 붙여넣기)
-ipcMain.handle('ocr-base64', async (event, base64Data, mimeType) => {
-  try {
-    const { createWorker } = require('tesseract.js');
-    const sharp = require('sharp');
-    const buf = Buffer.from(base64Data, 'base64');
-    const tmpIn  = path.join(os.tmpdir(), 'i2t_in_'  + Date.now() + '.png');
-    const tmpOut = path.join(os.tmpdir(), 'i2t_out_' + Date.now() + '.png');
-    fs.writeFileSync(tmpIn, buf);
-    await sharp(tmpIn).greyscale().normalise().sharpen().png().toFile(tmpOut);
-    try { fs.unlinkSync(tmpIn); } catch(e) {}
-    const worker = await createWorker(['kor', 'eng']);
-    const { data } = await worker.recognize(tmpOut, {}, { blocks: true });
-    await worker.terminate();
-    try { fs.unlinkSync(tmpOut); } catch(e) {}
-    return { ok: true, data };
-  } catch (e) {
-    return { ok: false, error: e.message };
-  }
-});
-
-// 클립보드에 HTML 복사
-ipcMain.handle('copy-html', async (event, html) => {
+// HTML을 클립보드에 복사 (Electron clipboard API — HTML 형식 지원)
+ipcMain.handle('copy-html-to-clipboard', async (event, html) => {
   try {
     clipboard.write({ html, text: html });
-    return { ok: true };
+    return { success: true };
   } catch (e) {
-    return { ok: false, error: e.message };
+    return { success: false, error: e.message };
   }
 });
 
-// 템플릿 저장/불러오기
-const tplPath = () => path.join(app.getPath('userData'), 'templates.json');
+// 템플릿 저장/불러오기 (userData 폴더에 JSON)
+const templatesPath = path.join(app.getPath('userData'), 'ima2table4ppt-templates.json');
 
-ipcMain.handle('load-templates', async () => {
+ipcMain.handle('load-templates', () => {
   try {
-    if (!fs.existsSync(tplPath())) return { ok: true, templates: [] };
-    return { ok: true, templates: JSON.parse(fs.readFileSync(tplPath(), 'utf8')) };
-  } catch (e) { return { ok: false, error: e.message }; }
+    if (fs.existsSync(templatesPath)) return JSON.parse(fs.readFileSync(templatesPath, 'utf8'));
+    return [];
+  } catch { return []; }
 });
 
-ipcMain.handle('save-templates', async (event, templates) => {
+ipcMain.handle('save-templates', (event, templates) => {
   try {
-    fs.writeFileSync(tplPath(), JSON.stringify(templates, null, 2), 'utf8');
-    return { ok: true };
-  } catch (e) { return { ok: false, error: e.message }; }
+    fs.writeFileSync(templatesPath, JSON.stringify(templates, null, 2), 'utf8');
+    return { success: true };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
 });
